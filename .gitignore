@@ -2,8 +2,9 @@ node_modules/
 .pnpm-store/
 dist/
 coverage/
-.env
-.env.local
+# Every env file stays local; only the example is committed.
+.env*
+!.env.example
 *.log
 .DS_Store
 *.tsbuildinfo
