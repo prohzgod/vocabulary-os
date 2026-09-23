@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  cards        Card[]
+}
+
+/// Mirrors the shared `Card` type. `id` is the client-derived word key
+/// ("vi:massive"), unique per user, so the primary key is (userId, id).
+model Card {
+  userId         String
+  id             String
+  word           String
+  translation    String
+  sourceLanguage String
+  targetLanguage String
+  context        String?
+  sourceUrl      String?
+  sourceTitle    String?
+  tags           String[]
+  state          String
+  ease           Float
+  intervalDays   Int
+  repetitions    Int
+  lapses         Int
+  dueAt          DateTime
+  lastReviewedAt DateTime?
+  createdAt      DateTime
+  /// Last-write-wins clock, set by whichever client made the edit.
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  /// Server clock of the last write. Sync pulls use this, never client clocks.
+  syncedAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, id])
+  @@index([userId, syncedAt])
+  @@index([userId, dueAt])
+}

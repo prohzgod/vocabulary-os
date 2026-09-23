@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Vocabulary OS",
+  "description": "Translate, save, review, remember.",
+  "version": "0.2.0",
+  "minimum_chrome_version": "116",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html",
+  "permissions": ["storage", "offscreen"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

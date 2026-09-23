@@ -1,0 +1,33 @@
+{
+  "name": "@vocab-os/api",
+  "private": true,
+  "version": "0.2.0",
+  "scripts": {
+    "build": "prisma generate && nest build",
+    "dev": "nest start --watch --preserveWatchOutput",
+    "start": "node dist/main.js",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.2.5",
+    "@nestjs/core": "^11.2.5",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/platform-express": "^11.2.5",
+    "@nestjs/throttler": "^6.7.0",
+    "@prisma/client": "^6.19.3",
+    "@vocab-os/shared": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@types/express": "^5.0.0",
+    "prisma": "^6.19.3"
+  }
+}

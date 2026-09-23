@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vocabulary-os-postgres
+    environment:
+      # Prisma creates `vocabulary_os` on first migrate if an older volume lacks it.
+      POSTGRES_DB: vocabulary_os
+      POSTGRES_USER: vocab_os
+      POSTGRES_PASSWORD: vocab_os
+    ports:
+      - "5432:5432"
+    volumes:
+      - vocab_os_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vocab_os"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  vocab_os_postgres:

@@ -1,0 +1,25 @@
+{
+  "name": "vocabulary-os",
+  "private": true,
+  "version": "0.2.0",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "postinstall": "tsc -p packages/shared/tsconfig.json",
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @vocab-os/api db:migrate",
+    "db:studio": "pnpm --filter @vocab-os/api db:studio"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "~5.9.3",
+    "vitest": "^3.2.7"
+  }
+}

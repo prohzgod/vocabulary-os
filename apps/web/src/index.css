@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-60; }
+  .btn-primary { @apply btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700; }
+  .input { @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100; }
+  .panel { @apply rounded-2xl border border-slate-200 bg-white p-5; }
+  .error { @apply text-sm text-red-700; }
+}
