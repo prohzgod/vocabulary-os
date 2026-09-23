@@ -2,6 +2,7 @@ import { send, type TranslateResult } from "../lib/messages.js";
 import { isOwnSurface, isSiteDisabled, type Settings } from "../lib/settings.js";
 import { extractContextSentence } from "./context.js";
 import { EXTENSION_ROOT_ID, isSelectionSafe } from "./dom-safety.js";
+import { startHighlightScheduler } from "./highlight-scheduler.js";
 import { highlightWords } from "./highlighter.js";
 
 const MAX_SELECTION = 120;
@@ -18,7 +19,7 @@ document.addEventListener("mousedown", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") close();
 });
-setTimeout(() => void refreshHighlights(), 800);
+const highlights = startHighlightScheduler(highlightPass);
 
 async function onSelection() {
   const selection = window.getSelection();
@@ -68,7 +69,7 @@ async function showTranslation(root: HTMLElement, rect: DOMRect, text: string, s
         sourceTitle: document.title
       });
       save.textContent = duplicate ? "Already saved" : "Saved ✓";
-      if (!duplicate) void refreshHighlights();
+      if (!duplicate) highlights.refreshNow();
     } catch (error) {
       save.disabled = false;
       save.textContent = "Save word";
@@ -88,12 +89,13 @@ async function showTranslation(root: HTMLElement, rect: DOMRect, text: string, s
   save.focus();
 }
 
-async function refreshHighlights() {
+/** One highlighting pass; returns how many words it wrapped. */
+async function highlightPass(): Promise<number> {
   const settings = await send("getSettings").catch(() => null);
   if (!settings?.highlightEnabled || isSiteDisabled(settings, location.hostname) || isOwnSurface(settings, location.href)) {
-    return;
+    return 0;
   }
-  highlightWords(await send("highlightWords").catch(() => []));
+  return highlightWords(await send("highlightWords").catch(() => []));
 }
 
 // --- Shadow DOM UI helpers ---
