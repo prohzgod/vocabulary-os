@@ -1,9 +1,11 @@
-import { GRADES, type Card, type Grade } from "@vocab-os/shared";
+import { GRADES, formatInterval, gradeIntervals, type Card, type Grade } from "@vocab-os/shared";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api";
 import { useLoad } from "../hooks";
+import { Highlighted } from "../ui";
 
 const KEYS: Record<string, Grade> = { "1": "again", "2": "hard", "3": "good", "4": "easy" };
+const LABELS: Record<Grade, string> = { again: "Again", hard: "Hard", good: "Good", easy: "Easy" };
 
 export function ReviewPage() {
   const { data: queue, error, setData: setQueue } = useLoad(api.dueCards);
@@ -44,43 +46,81 @@ export function ReviewPage() {
   }, [grade, revealed]);
 
   if (error) return <p className="error">{error}</p>;
-  if (!queue) return <p className="text-slate-500">Loading…</p>;
+  if (!queue) return <p className="text-ink-2">Loading…</p>;
   if (!card) {
     return (
-      <div className="panel text-center">
-        <h2 className="text-lg font-semibold">{done > 0 ? `Session done: ${done} reviews 🎉` : "Nothing due right now"}</h2>
-        <p className="mt-1 text-sm text-slate-500">Come back later, or save new words while you read.</p>
-        <a className="btn mt-4" href="#/">Back to dashboard</a>
+      <div className="mx-auto flex max-w-[680px] flex-col items-center gap-3 py-16 text-center">
+        <h1 className="font-serif text-4xl font-medium tracking-[-0.02em]">{done > 0 ? "Session done." : "All caught up."}</h1>
+        <p className="text-ink-2">
+          {done > 0 ? `${done} ${done === 1 ? "review" : "reviews"}. ` : ""}Come back later, or save new words while you read.
+        </p>
+        <a className="btn mt-3" href="#/">Back to today</a>
       </div>
     );
   }
 
+  const total = queue.length + done;
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <p className="text-sm text-slate-500">{queue.length} left · {done} done</p>
+    <div className="mx-auto flex max-w-[680px] flex-col gap-5">
+      <div className="flex items-center gap-4">
+        <span className="whitespace-nowrap text-[13px] text-ink-2">{done + 1} of {total}</span>
+        <div className="h-1 flex-grow overflow-hidden rounded-full bg-line">
+          <div className="h-1 bg-ink transition-[width]" style={{ width: `${(done / total) * 100}%` }} />
+        </div>
+        <a href="#/" className="whitespace-nowrap text-[13px] font-medium underline underline-offset-[3px]">End session</a>
+      </div>
       <Flashcard card={card} revealed={revealed} />
       {revealed ? (
-        <div className="grid grid-cols-4 gap-2">
-          {GRADES.map((value, index) => (
-            <button key={value} className={value === "good" ? "btn-primary" : "btn"} onClick={() => void grade(value)}>
-              {index + 1} · {value}
-            </button>
-          ))}
-        </div>
+        <Grades card={card} onGrade={(value) => void grade(value)} />
       ) : (
-        <button className="btn-primary w-full" onClick={() => setRevealed(true)}>Show answer (Space)</button>
+        <button className="btn-primary h-14 rounded-2xl text-base" onClick={() => setRevealed(true)}>
+          Show answer <kbd className="rounded-[5px] border border-current px-1.5 text-[11px] font-medium opacity-70">Space</kbd>
+        </button>
       )}
-      {gradeError && <p className="error">{gradeError}</p>}
+      <p className="text-center text-[13px] text-ink-3">Space shows the answer · 1–4 grades it</p>
+      {gradeError && <p className="error text-center">{gradeError}</p>}
+    </div>
+  );
+}
+
+function Grades({ card, onGrade }: { card: Card; onGrade: (grade: Grade) => void }) {
+  const intervals = gradeIntervals(card);
+  return (
+    <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      {GRADES.map((value, index) => (
+        <button
+          key={value}
+          onClick={() => onGrade(value)}
+          className={`flex h-[76px] flex-col items-center justify-center gap-1 rounded-[14px] border ${value === "good" ? "border-ink bg-ink text-paper" : "border-line bg-card hover:border-ink-3"}`}
+        >
+          <span className={`text-base font-semibold ${value === "again" ? "text-rust" : ""}`}>{LABELS[value]}</span>
+          <span className={`text-xs ${value === "good" ? "text-line-2" : "text-ink-3"}`}>
+            {formatInterval(intervals[value])} · {index + 1}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }
 
 function Flashcard({ card, revealed }: { card: Card; revealed: boolean }) {
   return (
-    <div className="panel py-10 text-center">
-      <div className="text-3xl font-bold">{card.word}</div>
-      {card.context && <p className="mt-4 text-slate-600">{card.context}</p>}
-      {revealed && <div className="mt-6 text-2xl font-semibold text-violet-700">{card.translation}</div>}
-    </div>
+    <section className="flex flex-col items-center gap-4 rounded-3xl border border-line bg-card px-8 py-12 text-center sm:px-14">
+      <h1 className="break-words font-serif text-5xl font-medium leading-none tracking-[-0.03em] sm:text-6xl">{card.word}</h1>
+      {card.context && (
+        <p className="max-w-[460px] text-lg leading-relaxed text-body"><Highlighted text={card.context} word={card.word} /></p>
+      )}
+      {card.sourceUrl && (
+        <a className="text-[13px] text-ink-2 underline underline-offset-[3px]" href={card.sourceUrl} target="_blank" rel="noreferrer">
+          {card.sourceTitle || card.sourceUrl}
+        </a>
+      )}
+      {revealed && (
+        <>
+          <div className="mb-1.5 mt-3.5 w-20 border-t border-dashed border-line-2" />
+          <div className="font-serif text-[38px] font-medium leading-tight tracking-[-0.01em]">{card.translation}</div>
+        </>
+      )}
+    </section>
   );
 }

@@ -1,8 +1,16 @@
-import type { Card, Grade, Stats } from "@vocab-os/shared";
+import { formatInterval, gradeIntervals, isDue, type Card, type Grade, type Stats } from "@vocab-os/shared";
 import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { send, type AccountState } from "../lib/messages.js";
+import { Highlighted, Icon, Mark, StateGlyph } from "../ui/parts.js";
 import "../ui/styles.css";
+
+const GRADE_BUTTONS: { grade: Grade; label: string }[] = [
+  { grade: "again", label: "Again" },
+  { grade: "hard", label: "Hard" },
+  { grade: "good", label: "Good" },
+  { grade: "easy", label: "Easy" }
+];
 
 function Popup() {
   const [tab, setTab] = useState<"review" | "words">("review");
@@ -30,37 +38,50 @@ function Popup() {
   }, [refresh]);
 
   return (
-    <>
-      <div className="header">
-        <div className="spread">
-          <h1>Vocabulary OS</h1>
-          <button className="link" onClick={() => void openDashboard()}>Dashboard ↗</button>
+    <div className="popup-shell">
+      <header className="header">
+        <div className="brand"><Mark />Vocabulary</div>
+        <div className="row" style={{ gap: 2 }}>
+          <button className="icon" aria-label="Open dashboard" title="Open dashboard" onClick={() => void openDashboard()}>
+            <Icon name="external" />
+          </button>
+          <button className="icon" aria-label="Settings" title="Settings" onClick={() => void chrome.runtime.openOptionsPage()}>
+            <Icon name="settings" />
+          </button>
         </div>
-        <div className="chips">
-          <div className="chip"><b>{stats?.due ?? "–"}</b>due</div>
-          <div className="chip"><b>{stats?.total ?? "–"}</b>words</div>
-          <div className="chip"><b>{stats?.streakDays ?? "–"}</b>day streak</div>
-        </div>
-      </div>
-      <div className="tabs">
-        <button className={tab === "review" ? "active" : ""} onClick={() => setTab("review")}>Review</button>
-        <button className={tab === "words" ? "active" : ""} onClick={() => setTab("words")}>Words</button>
-      </div>
-      <div className="panel">
+      </header>
+      <p className="summary">
+        {stats ? (
+          <>
+            <strong>{stats.due} due</strong> · {plural(stats.total, "word")} · {stats.streakDays}-day streak
+          </>
+        ) : (
+          " "
+        )}
+      </p>
+      <nav className="tabs">
+        <button className={tab === "review" ? "active" : ""} aria-pressed={tab === "review"} onClick={() => setTab("review")}>Review</button>
+        <button className={tab === "words" ? "active" : ""} aria-pressed={tab === "words"} onClick={() => setTab("words")}>Words</button>
+      </nav>
+      <main className="panel">
         {tab === "review" ? <Review key={version} onChange={refresh} /> : <Words key={version} onChange={refresh} />}
-      </div>
+      </main>
       <Footer account={account} onSync={() => void send("syncNow").then(setAccount).then(refresh)} />
-    </>
+    </div>
   );
 }
 
 function Review({ onChange }: { onChange: () => void }) {
   const [queue, setQueue] = useState<Card[] | null>(null);
+  const [total, setTotal] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const card = queue?.[0];
 
   useEffect(() => {
-    void send("dueCards").then(setQueue);
+    void send("dueCards").then((cards) => {
+      setQueue(cards);
+      setTotal(cards.length);
+    });
   }, []);
 
   const grade = useCallback(
@@ -69,6 +90,7 @@ function Review({ onChange }: { onChange: () => void }) {
       const updated = await send("gradeCard", { id: card.id, grade: value });
       // "Again" comes back at the end of this session; everything else leaves the queue.
       setQueue((current) => [...(current ?? []).slice(1), ...(value === "again" ? [updated] : [])]);
+      if (value === "again") setTotal((count) => count + 1);
       setRevealed(false);
       onChange();
     },
@@ -77,6 +99,7 @@ function Review({ onChange }: { onChange: () => void }) {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLInputElement) return;
       if (event.key === " ") {
         event.preventDefault();
         setRevealed(true);
@@ -90,30 +113,70 @@ function Review({ onChange }: { onChange: () => void }) {
   }, [grade, revealed]);
 
   if (!queue) return <p className="muted">Loading…</p>;
-  if (!card) return <p className="muted">Nothing to review. Select a word on any page and save it to start.</p>;
+  if (!card) return <Done />;
 
+  const intervals = gradeIntervals(card);
   return (
-    <div>
-      <div className="flashcard">
-        <div className="word">{card.word}</div>
-        {card.context && <p className="context">{card.context}</p>}
-        {revealed && <div className="translation">{card.translation}</div>}
-      </div>
+    <>
+      <section className={`flashcard${revealed ? " revealed" : ""}`}>
+        <span className="caption">{total - queue.length + 1} of {total}</span>
+        <h2 className="word">{card.word}</h2>
+        {card.context && <p className="context"><Highlighted text={card.context} word={card.word} /></p>}
+        {revealed ? (
+          <>
+            <div className="divider" />
+            <div className="translation">{card.translation}</div>
+          </>
+        ) : (
+          card.sourceUrl && <span className="caption">{hostname(card.sourceUrl)}</span>
+        )}
+      </section>
       {revealed ? (
-        <div className="grades">
-          {(["again", "hard", "good", "easy"] as const).map((value, index) => (
-            <button key={value} className={value === "good" ? "primary" : ""} onClick={() => void grade(value)}>
-              {index + 1}. {value}
-            </button>
-          ))}
-        </div>
+        <>
+          <div className="grades">
+            {GRADE_BUTTONS.map(({ grade: value, label }) => (
+              <button key={value} className={value === "good" ? "primary" : value === "again" ? "again" : ""} onClick={() => void grade(value)}>
+                {label}
+                <small>{formatInterval(intervals[value])}</small>
+              </button>
+            ))}
+          </div>
+          <p className="caption" style={{ textAlign: "center" }}>Keys 1 · 2 · 3 · 4</p>
+        </>
       ) : (
-        <button className="primary" style={{ width: "100%", marginTop: 12 }} onClick={() => setRevealed(true)}>
-          Show answer (Space)
+        <button className="primary reveal" onClick={() => setRevealed(true)}>
+          Show answer <kbd>Space</kbd>
         </button>
       )}
-      <p className="muted" style={{ marginTop: 8 }}>{queue.length} left</p>
-    </div>
+    </>
+  );
+}
+
+function Done() {
+  const [next, setNext] = useState<Card | null | undefined>(undefined);
+
+  useEffect(() => {
+    void send("listCards").then((cards) => {
+      const upcoming = cards.filter((card) => !isDue(card)).sort((a, b) => a.dueAt.localeCompare(b.dueAt));
+      setNext(upcoming[0] ?? null);
+    });
+  }, []);
+
+  return (
+    <>
+      <div className="done">
+        <h2>{next === null ? "No words yet." : "All caught up."}</h2>
+        {next && (
+          <p className="muted">
+            Next up is <strong style={{ color: "var(--ink)" }}>{next.word}</strong>, in {formatInterval(Date.parse(next.dueAt) - Date.now())}.
+          </p>
+        )}
+      </div>
+      <div className="hint">
+        <span className="mark"><Mark framed={false} /></span>
+        <span>Select any word while you read, then tap this mark to save it.</span>
+      </div>
+    </>
   );
 }
 
@@ -135,20 +198,33 @@ function Words({ onChange }: { onChange: () => void }) {
   const visible = cards.filter((card) => !q || card.word.toLowerCase().includes(q) || card.translation.toLowerCase().includes(q));
 
   return (
-    <div>
-      <input placeholder={`Search ${cards.length} words`} value={query} onChange={(event) => setQuery(event.target.value)} />
-      <div className="list">
-        {visible.map((card) => (
-          <div key={card.id} className="item spread">
-            <div>
-              <b>{card.word}</b> · {card.translation}
-              <div className="muted">{card.state}</div>
-            </div>
-            <button className="link" title="Delete" onClick={() => void remove(card.id)}>✕</button>
-          </div>
-        ))}
-      </div>
-    </div>
+    <>
+      <label className="search">
+        <Icon name="search" size={16} />
+        <span className="vh">Search words</span>
+        <input type="search" placeholder={`Search ${plural(cards.length, "word")}`} value={query} onChange={(event) => setQuery(event.target.value)} />
+      </label>
+      <ul className="list">
+        {visible.map((card) => {
+          const due = isDue(card);
+          return (
+            <li key={card.id} className="item">
+              <StateGlyph state={card.state} />
+              <div className="text">
+                <span className="word">{card.word}</span>
+                <span className="meaning">{card.translation}</span>
+              </div>
+              <span className={`due${due ? " now" : ""}`}>{due ? "due now" : `in ${formatInterval(Date.parse(card.dueAt) - Date.now())}`}</span>
+              <button className="delete" aria-label={`Delete ${card.word}`} title="Delete" onClick={() => void remove(card.id)}>
+                <Icon name="trash" size={16} />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      {cards.length > 0 && visible.length === 0 && <p className="muted">No word matches “{query}”.</p>}
+      {cards.length === 0 && <p className="muted">Words you save while reading show up here.</p>}
+    </>
   );
 }
 
@@ -156,21 +232,38 @@ function Footer({ account, onSync }: { account: AccountState | null; onSync: () 
   if (!account) return null;
   if (!account.email) {
     return (
-      <div className="footer spread">
-        <span className="muted">Saved on this device only</span>
+      <footer className="footer">
+        <span className="status">Saved on this device only</span>
         <button className="link" onClick={() => void chrome.runtime.openOptionsPage()}>Sign in to sync</button>
-      </div>
+      </footer>
     );
   }
+  const waiting = account.pendingChanges > 0 ? ` · ${plural(account.pendingChanges, "change")} waiting` : "";
   return (
-    <div className="footer spread">
-      <span className={account.lastError ? "error" : "muted"}>
-        {account.lastError ?? (account.lastSyncedAt ? `Synced ${new Date(account.lastSyncedAt).toLocaleTimeString()}` : "Not synced yet")}
-        {account.pendingChanges > 0 && ` · ${account.pendingChanges} pending`}
+    <footer className="footer">
+      <span className={`status${account.lastError ? " error" : ""}`} title={account.lastError ?? undefined}>
+        <span className={`dot${account.lastError ? " warn" : ""}`} />
+        {account.lastError
+          ? account.lastError
+          : account.lastSyncedAt
+            ? `Synced ${new Date(account.lastSyncedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}${waiting}`
+            : `Not synced yet${waiting}`}
       </span>
       <button className="link" onClick={onSync}>Sync now</button>
-    </div>
+    </footer>
   );
+}
+
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function hostname(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
 }
 
 async function openDashboard() {

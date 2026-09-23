@@ -66,3 +66,29 @@ function clampContext(value: string, selectedIndex: number): string {
 
   return `${prefix}${value.slice(start, end).trim()}${suffix}`;
 }
+
+const BLOCK_SELECTOR = "p, li, dd, dt, td, th, blockquote, figcaption, h1, h2, h3, h4, h5, h6, article, section, main";
+
+/**
+ * The sentence around the selection itself, not the first match of the word
+ * elsewhere on the page (menus, titles). Only the tail of `before` since its
+ * last sentence break is kept, so the search below lands in the right sentence.
+ */
+export function extractContextAround(before: string, selectedText: string, after: string): string | undefined {
+  const start = Math.max(...[".", "?", "!", "\n"].map((mark) => before.lastIndexOf(mark)));
+  return extractContextSentence(before.slice(start + 1) + selectedText + after, selectedText);
+}
+
+/** Context sentence for a live selection range, read from its nearest text block. */
+export function contextFromRange(range: Range): string | undefined {
+  const node = range.startContainer;
+  const element = node instanceof Element ? node : node.parentElement;
+  const block = element?.closest(BLOCK_SELECTOR) ?? document.body;
+  const before = document.createRange();
+  before.setStart(block, 0);
+  before.setEnd(range.startContainer, range.startOffset);
+  const after = document.createRange();
+  after.setStart(range.endContainer, range.endOffset);
+  after.setEnd(block, block.childNodes.length);
+  return extractContextAround(before.toString(), range.toString(), after.toString());
+}

@@ -1,6 +1,7 @@
 import { SYNC_BATCH_LIMIT, type AuthResponse, type Credentials, type SyncRequest, type SyncResponse } from "@vocab-os/shared";
 import { applyRemote, countDirty, db, takeDirty } from "../lib/db.js";
 import type { AccountState } from "../lib/messages.js";
+import { updateBadge } from "./badge.js";
 import { getSettings } from "../lib/settings.js";
 
 interface Account {
@@ -100,6 +101,7 @@ async function runSync(): Promise<AccountState> {
       if (changes.length < SYNC_BATCH_LIMIT) break;
     }
     await setMeta({ cursor, lastSyncedAt: new Date().toISOString(), lastError: null });
+    await updateBadge();
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       await signOut();

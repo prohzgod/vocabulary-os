@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardId, computeStats, createCard, gradeCard, isDue, markDeleted, mergeRemote, shouldAcceptIncoming } from "./index.js";
+import { cardId, computeStats, createCard, formatInterval, gradeCard, gradeIntervals, isDue, markDeleted, mergeRemote, shouldAcceptIncoming } from "./index.js";
 
 const NOW = new Date("2026-09-18T08:00:00.000Z");
 const later = (card: ReturnType<typeof createCard>, ms: number) => ({
@@ -81,5 +81,13 @@ describe("computeStats", () => {
     expect(stats.reviewedToday).toBe(1);
     expect(stats.streakDays).toBe(2);
     expect(stats.byState).toEqual({ new: 1, learning: 1, review: 0, mastered: 0 });
+  });
+});
+
+describe("gradeIntervals", () => {
+  it("previews when each grade brings the card back", () => {
+    const reviewed = gradeCard(createCard({ word: "scheduled", translation: "lên kế hoạch", targetLanguage: "vi" }, NOW), "good", NOW);
+    const labels = Object.values(gradeIntervals(reviewed, NOW)).map(formatInterval);
+    expect(labels).toEqual(["10 min", "2 days", "3 days", "4 days"]);
   });
 });

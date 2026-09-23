@@ -1,4 +1,4 @@
-import type { Card, Grade, ReviewState } from "./card.js";
+import { GRADES, type Card, type Grade, type ReviewState } from "./card.js";
 
 const MIN_EASE = 1.3;
 const MASTERED_AFTER_DAYS = 30;
@@ -48,6 +48,24 @@ export function gradeCard(card: Card, grade: Grade, now = new Date()): Card {
     repetitions,
     dueAt: new Date(now.getTime() + intervalDays * DAY_MS).toISOString()
   };
+}
+
+/** How long until the card comes back for each grade, in ms. Labels the grade buttons. */
+export function gradeIntervals(card: Card, now = new Date()): Record<Grade, number> {
+  const entries = GRADES.map((grade) => [grade, Date.parse(gradeCard(card, grade, now).dueAt) - now.getTime()] as const);
+  return Object.fromEntries(entries) as Record<Grade, number>;
+}
+
+/** "10 min", "5 h", "3 days", "2 months". */
+export function formatInterval(ms: number): string {
+  const minutes = Math.max(1, Math.round(ms / 60_000));
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return days === 1 ? "1 day" : `${days} days`;
+  const months = Math.round(days / 30);
+  return months === 1 ? "1 month" : `${months} months`;
 }
 
 export function isDue(card: Card, now = new Date()): boolean {

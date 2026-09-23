@@ -3,6 +3,7 @@ import * as cards from "../lib/db.js";
 import { importLegacyWords } from "../lib/legacy-import.js";
 import type { MessageName, Messages, Request, TranslatorStatus } from "../lib/messages.js";
 import { getSettings, updateSettings } from "../lib/settings.js";
+import { BADGE_ALARM, updateBadge } from "./badge.js";
 import { callOffscreen } from "./offscreen.js";
 import { accountState, scheduleSync, signIn, signOut, syncNow } from "./sync.js";
 
@@ -17,6 +18,7 @@ async function languagePair() {
 async function mutate<T>(change: Promise<T>): Promise<T> {
   const result = await change;
   scheduleSync();
+  void updateBadge();
   return result;
 }
 
@@ -67,4 +69,11 @@ chrome.runtime.onMessage.addListener((message: Request & { target?: string }, _s
 
 chrome.runtime.onInstalled.addListener(() => {
   void importLegacyWords().then((count) => count > 0 && scheduleSync());
+  void chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 5 });
+  void updateBadge();
+});
+
+chrome.runtime.onStartup.addListener(() => void updateBadge());
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === BADGE_ALARM) void updateBadge();
 });

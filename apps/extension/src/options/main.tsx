@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { send, type AccountState, type TranslatorStatus } from "../lib/messages.js";
 import type { Settings } from "../lib/settings.js";
+import { Icon, Mark } from "../ui/parts.js";
 import "../ui/styles.css";
 
-const LANGUAGES = { en: "English", vi: "Vietnamese", fr: "French", de: "German", es: "Spanish", ja: "Japanese", ko: "Korean", zh: "Chinese" };
+const LANGUAGES = { en: "English", vi: "Tiếng Việt", fr: "Français", de: "Deutsch", es: "Español", ja: "日本語", ko: "한국어", zh: "中文" };
 
 function Options() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -17,7 +18,10 @@ function Options() {
   if (!settings) return null;
   return (
     <div className="page">
-      <h1>Vocabulary OS settings</h1>
+      <header className="page-title">
+        <Mark size={36} />
+        <h1>Settings</h1>
+      </header>
       <AccountSection settings={settings} update={update} />
       <TranslationSection settings={settings} update={update} />
       <ReadingSection settings={settings} update={update} />
@@ -28,12 +32,25 @@ function Options() {
 
 type SectionProps = { settings: Settings; update: (patch: Partial<Settings>) => Promise<void> };
 
+function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+  return (
+    <section className="section">
+      <div className="section-head">
+        <h2>{title}</h2>
+        {description && <p className="muted">{description}</p>}
+      </div>
+      <div className="section-body">{children}</div>
+    </section>
+  );
+}
+
 function AccountSection({ settings, update }: SectionProps) {
   const [account, setAccount] = useState<AccountState | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [editingServer, setEditingServer] = useState(false);
 
   useEffect(() => {
     void send("account").then(setAccount);
@@ -57,30 +74,20 @@ function AccountSection({ settings, update }: SectionProps) {
   };
 
   return (
-    <section className="section">
-      <h2>Account & sync</h2>
-      <p className="muted">Optional. Without an account, words stay on this device. With one, they sync to the web dashboard and your other browsers.</p>
-      <label>
-        Server URL
-        <input value={settings.apiUrl} onChange={(event) => void update({ apiUrl: event.target.value })} />
-      </label>
-      <label>
-        Dashboard URL
-        <input value={settings.dashboardUrl} onChange={(event) => void update({ dashboardUrl: event.target.value })} />
-      </label>
+    <Section title="Account" description="Optional. Signed out, your words stay on this device. Signed in, they sync to the dashboard and your other browsers.">
       {account?.email ? (
-        <div className="stack">
-          <div className="spread">
-            <span>Signed in as <b>{account.email}</b></span>
-            <button onClick={() => void run(() => send("signOut"))}>Sign out</button>
-          </div>
-          <div className="spread">
-            <span className={account.lastError ? "error" : "muted"}>
-              {account.lastError ?? (account.lastSyncedAt ? `Last synced ${new Date(account.lastSyncedAt).toLocaleString()}` : "Not synced yet")}
-              {account.pendingChanges > 0 && ` · ${account.pendingChanges} changes waiting`}
+        <div className="row" style={{ gap: 14 }}>
+          <span className="avatar" aria-hidden="true">{account.email[0]}</span>
+          <div style={{ flexGrow: 1, display: "grid", gap: 2, minWidth: 0 }}>
+            <span style={{ fontSize: 15, fontWeight: 500, overflowWrap: "anywhere" }}>{account.email}</span>
+            <span className={`row ${account.lastError ? "error" : "muted"}`} style={{ gap: 6 }}>
+              <span className={`dot${account.lastError ? " warn" : ""}`} />
+              {account.lastError ?? (account.lastSyncedAt ? `Synced ${new Date(account.lastSyncedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : "Not synced yet")}
+              {account.pendingChanges > 0 && ` · ${account.pendingChanges} waiting`}
             </span>
-            <button disabled={busy} onClick={() => void run(() => send("syncNow"))}>Sync now</button>
           </div>
+          <button disabled={busy} onClick={() => void run(() => send("syncNow"))}>Sync now</button>
+          <button className="quiet" onClick={() => void run(() => send("signOut"))}>Sign out</button>
         </div>
       ) : (
         <form className="stack" onSubmit={submit(false)}>
@@ -96,7 +103,23 @@ function AccountSection({ settings, update }: SectionProps) {
         </form>
       )}
       {error && <p className="error">{error}</p>}
-    </section>
+      <div className="box">
+        {editingServer ? (
+          <div className="box-row" style={{ display: "grid", gap: 12 }}>
+            <label>Server URL<input value={settings.apiUrl} onChange={(event) => void update({ apiUrl: event.target.value })} /></label>
+            <label>Dashboard URL<input value={settings.dashboardUrl} onChange={(event) => void update({ dashboardUrl: event.target.value })} /></label>
+            <div><button onClick={() => setEditingServer(false)}>Done</button></div>
+          </div>
+        ) : (
+          <div className="box-row" style={{ paddingBlock: 10 }}>
+            <span className="muted" style={{ flexGrow: 1, overflowWrap: "anywhere" }}>
+              Server <span style={{ color: "var(--ink)", fontWeight: 500 }}>{host(settings.apiUrl)}</span>
+            </span>
+            <button className="link" onClick={() => setEditingServer(true)}>Change</button>
+          </div>
+        )}
+      </div>
+    </Section>
   );
 }
 
@@ -124,16 +147,15 @@ function TranslationSection({ settings, update }: SectionProps) {
   };
 
   return (
-    <section className="section">
-      <h2>Translation</h2>
-      <p className="muted">Everything runs on your device. Chrome's built-in translator is used when available; otherwise an offline model (~100 MB, downloaded once) is used.</p>
-      <div className="grid2">
+    <Section title="Translation" description="Runs on your device. Nothing you read is sent anywhere.">
+      <div className="pair">
         <label>
           From
           <select value={settings.sourceLanguage} onChange={(event) => void update({ sourceLanguage: event.target.value })}>
             {Object.entries(LANGUAGES).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
           </select>
         </label>
+        <span className="arrow" aria-hidden="true">→</span>
         <label>
           To
           <select value={settings.targetLanguage} onChange={(event) => void update({ targetLanguage: event.target.value })}>
@@ -142,65 +164,111 @@ function TranslationSection({ settings, update }: SectionProps) {
         </label>
       </div>
       {status && (
-        <div className="stack">
-          <div className="spread">
-            <span>Chrome translator: <b>{CHROME_LABELS[status.chrome]}</b></span>
-            {status.chrome === "downloadable" && <button onClick={() => void downloadChromeModel()}>Download</button>}
-          </div>
-          <div className="spread">
-            <span>
-              Offline model: <b>{LOCAL_LABELS[status.local.state]}</b>
-              {status.local.state === "loading" && ` ${status.local.progress}%`}
-            </span>
-            {(status.local.state === "idle" || status.local.state === "error") && (
-              <button onClick={() => void send("downloadLocalModel").then(setStatus)}>Load now</button>
+        <div className="box">
+          <div className="box-row">
+            <div className="text">
+              <span className="title">Chrome translator</span>
+              <span className="muted">Built into Chrome. Used first.</span>
+            </div>
+            {status.chrome === "downloadable" ? (
+              <button onClick={() => void downloadChromeModel()}>Download</button>
+            ) : (
+              <span className={`status-chip${status.chrome === "available" ? " ready" : ""}`}>
+                {status.chrome === "available" && <span className="dot" />}
+                {CHROME_LABELS[status.chrome]}
+              </span>
             )}
           </div>
-          {status.local.error && <p className="error">{status.local.error}</p>}
+          <div className="box-row">
+            <div className="text">
+              <span className="title">Offline backup</span>
+              <span className="muted">For when Chrome's translator isn't available. About 100 MB, downloaded once.</span>
+              {status.local.state === "loading" && (
+                <div className="progress" style={{ marginTop: 8 }}><div style={{ width: `${status.local.progress}%` }} /></div>
+              )}
+              {status.local.error && <p className="error">{status.local.error}</p>}
+            </div>
+            {status.local.state === "idle" || status.local.state === "error" ? (
+              <button onClick={() => void send("downloadLocalModel").then(setStatus)}>{status.local.state === "error" ? "Try again" : "Download"}</button>
+            ) : (
+              <span className={`status-chip${status.local.state === "ready" ? " ready" : ""}`}>
+                {status.local.state === "ready" && <span className="dot" />}
+                {status.local.state === "loading" ? `${status.local.progress}%` : LOCAL_LABELS[status.local.state]}
+              </span>
+            )}
+          </div>
         </div>
       )}
       {note && <p className="muted">{note}</p>}
-    </section>
+    </Section>
   );
 }
 
 const CHROME_LABELS: Record<TranslatorStatus["chrome"], string> = {
-  unsupported: "not supported in this Chrome",
-  unavailable: "not available for this language pair",
-  downloadable: "needs a one-time download",
-  downloading: "downloading…",
-  available: "ready"
+  unsupported: "Not in this Chrome",
+  unavailable: "Not for this pair",
+  downloadable: "Needs a download",
+  downloading: "Downloading…",
+  available: "Ready"
 };
 
 const LOCAL_LABELS: Record<TranslatorStatus["local"]["state"], string> = {
-  unsupported: "no offline model for this language pair",
-  idle: "loads on first translation",
-  loading: "loading",
-  ready: "ready",
-  error: "failed to load"
+  unsupported: "Not for this pair",
+  idle: "Not downloaded",
+  loading: "Loading",
+  ready: "Ready",
+  error: "Failed"
 };
 
 function ReadingSection({ settings, update }: SectionProps) {
+  const [site, setSite] = useState("");
+
+  const addSite = (event: FormEvent) => {
+    event.preventDefault();
+    const value = site.trim().replace(/^https?:\/\//, "").replace(/\/.*$/, "");
+    if (value && !settings.disabledSites.includes(value)) void update({ disabledSites: [...settings.disabledSites, value] });
+    setSite("");
+  };
+
   return (
-    <section className="section">
-      <h2>While reading</h2>
-      <label className="check">
-        <input type="checkbox" checked={settings.inlineEnabled} onChange={(event) => void update({ inlineEnabled: event.target.checked })} />
-        Show the translate button when I select text
+    <Section title="While reading">
+      <label className="switch-row">
+        <span className="text">
+          <span className="title" style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>Show the translate mark when I select text</span>
+          <span className="muted">A small mark appears next to your selection.</span>
+        </span>
+        <input type="checkbox" className="switch" checked={settings.inlineEnabled} onChange={(event) => void update({ inlineEnabled: event.target.checked })} />
       </label>
-      <label className="check">
-        <input type="checkbox" checked={settings.highlightEnabled} onChange={(event) => void update({ highlightEnabled: event.target.checked })} />
-        Highlight words I have saved
+      <label className="switch-row">
+        <span className="text">
+          <span style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}>Highlight words I've saved</span>
+          <span className="muted">A yellow underline, like <mark style={{ color: "var(--ink)" }}>this</mark>. Hover to see the meaning.</span>
+        </span>
+        <input type="checkbox" className="switch" checked={settings.highlightEnabled} onChange={(event) => void update({ highlightEnabled: event.target.checked })} />
       </label>
-      <label>
-        Turn off on these sites (one per line)
-        <textarea
-          rows={3}
-          defaultValue={settings.disabledSites.join("\n")}
-          onBlur={(event) => void update({ disabledSites: event.target.value.split("\n").map((site) => site.trim()).filter(Boolean) })}
-        />
-      </label>
-    </section>
+      <div className="stack" style={{ gap: 10, paddingTop: 4 }}>
+        <span style={{ fontSize: 14, fontWeight: 500 }}>Turn off on these sites</span>
+        {settings.disabledSites.length > 0 && (
+          <div className="chips">
+            {settings.disabledSites.map((value) => (
+              <span key={value} className="chip">
+                {value}
+                <button aria-label={`Remove ${value}`} onClick={() => void update({ disabledSites: settings.disabledSites.filter((other) => other !== value) })}>
+                  <Icon name="close" size={12} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <form className="row" onSubmit={addSite}>
+          <label style={{ flexGrow: 1 }}>
+            <span className="vh">Site to turn off</span>
+            <input placeholder="example.com" value={site} onChange={(event) => setSite(event.target.value)} />
+          </label>
+          <button type="submit">Add</button>
+        </form>
+      </div>
+    </Section>
   );
 }
 
@@ -228,18 +296,25 @@ function DataSection() {
   };
 
   return (
-    <section className="section">
-      <h2>Your data</h2>
+    <Section title="Your data" description="Every word and its review schedule, as one JSON file.">
       <div className="row">
-        <button onClick={() => void exportJson()}>Export JSON</button>
+        <button onClick={() => void exportJson()}>Export</button>
         <label className="button">
-          Import JSON
+          Import…
           <input type="file" accept="application/json" hidden onChange={(event) => void importJson(event.target.files?.[0])} />
         </label>
       </div>
       {note && <p className="muted">{note}</p>}
-    </section>
+    </Section>
   );
+}
+
+function host(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
 }
 
 createRoot(document.getElementById("root")!).render(<Options />);

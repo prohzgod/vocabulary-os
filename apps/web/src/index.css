@@ -1,11 +1,24 @@
+@import "@fontsource/be-vietnam-pro/400.css";
+@import "@fontsource/be-vietnam-pro/500.css";
+@import "@fontsource/be-vietnam-pro/600.css";
+@import "@fontsource-variable/fraunces/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body { @apply bg-paper font-sans text-ink antialiased; }
+  mark { background: linear-gradient(transparent 58%, theme("colors.marker") 58%); color: inherit; padding: 0 1px; }
+  :focus-visible { @apply outline outline-2 outline-offset-2 outline-ink; }
+}
+
 @layer components {
-  .btn { @apply inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 disabled:opacity-60; }
-  .btn-primary { @apply btn border-violet-600 bg-violet-600 text-white hover:bg-violet-700; }
-  .input { @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100; }
-  .panel { @apply rounded-2xl border border-slate-200 bg-white p-5; }
-  .error { @apply text-sm text-red-700; }
+  .btn { @apply inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-line-2 bg-card px-4 text-sm font-medium text-ink hover:border-ink-3 disabled:opacity-60; }
+  .btn-primary { @apply btn border-ink bg-ink font-semibold text-paper hover:border-ink hover:bg-[#33302a]; }
+  .btn-icon { @apply inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-card text-ink hover:border-ink-3; }
+  .input { @apply h-11 w-full rounded-[10px] border border-line-2 bg-card px-3 text-sm text-ink outline-none placeholder:text-ink-3 focus:border-ink; }
+  .panel { @apply rounded-[20px] border border-line bg-card; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.06em] text-ink-3; }
+  .error { @apply text-sm text-rust; }
 }
