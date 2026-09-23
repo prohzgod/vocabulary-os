@@ -9,8 +9,10 @@ services:
     plan: free
     region: singapore
     healthCheckPath: /health
-    # Migrations run in the build step because preDeployCommand needs a paid plan.
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @vocab-os/api build && pnpm --filter @vocab-os/api db:deploy
+    # Build @vocab-os/shared explicitly: a cached install skips the root postinstall
+    # that normally produces packages/shared/dist, and the API cannot compile without it.
+    # Migrations run here because preDeployCommand needs a paid plan.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @vocab-os/shared build && pnpm --filter @vocab-os/api build && pnpm --filter @vocab-os/api db:deploy
     startCommand: node apps/api/dist/main.js
     envVars:
       - key: NODE_VERSION

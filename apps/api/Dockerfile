@@ -6,7 +6,8 @@ RUN corepack enable
 WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @vocab-os/api build
+# shared must be compiled before the API can typecheck against it.
+RUN pnpm --filter @vocab-os/shared build && pnpm --filter @vocab-os/api build
 
 FROM node:22-bookworm-slim
 # Prisma's query engine needs OpenSSL.
