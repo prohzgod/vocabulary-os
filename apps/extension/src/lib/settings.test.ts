@@ -25,6 +25,10 @@ describe("isOwnSurface", () => {
 
   it("leaves ordinary pages alone, including look-alike hosts", () => {
     expect(isOwnSurface(settings, "https://en.wikipedia.org/wiki/Vocabulary")).toBe(false);
+    // The article a word was saved from keeps its highlights, however you reach it.
+    expect(isOwnSurface(settings, "https://www.bbc.com/news/articles/abc123")).toBe(false);
+    // The API is a different origin from the dashboard and is not a browsing surface anyway.
+    expect(isOwnSurface(settings, "https://vocabulary-os-api.onrender.com/health")).toBe(false);
     expect(isOwnSurface(settings, "https://vocabulary-os-api.vercel.app.evil.test/")).toBe(false);
     expect(isOwnSurface(settings, "http://vocabulary-os-api.vercel.app/")).toBe(false);
   });
