@@ -43,10 +43,15 @@ The container runs `prisma migrate deploy` at start-up, then the server.
 
 ```bash
 pnpm install --frozen-lockfile
+pnpm --filter @vocab-os/shared build   # see the note below
 pnpm --filter @vocab-os/api build
 pnpm --filter @vocab-os/api db:deploy
 node apps/api/dist/main.js
 ```
+
+**Always build `@vocab-os/shared` first in a deploy command.** The root `postinstall`
+compiles it, but a cached install is a no-op and skips that hook, and then the API
+fails with `Cannot find module '@vocab-os/shared'`. The same applies to the web app.
 
 ### Managed Postgres (Neon)
 
