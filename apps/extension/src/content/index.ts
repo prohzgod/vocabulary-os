@@ -1,5 +1,5 @@
 import { send, type TranslateResult } from "../lib/messages.js";
-import { isSiteDisabled, type Settings } from "../lib/settings.js";
+import { isOwnSurface, isSiteDisabled, type Settings } from "../lib/settings.js";
 import { extractContextSentence } from "./context.js";
 import { EXTENSION_ROOT_ID, isSelectionSafe } from "./dom-safety.js";
 import { highlightWords } from "./highlighter.js";
@@ -90,7 +90,9 @@ async function showTranslation(root: HTMLElement, rect: DOMRect, text: string, s
 
 async function refreshHighlights() {
   const settings = await send("getSettings").catch(() => null);
-  if (!settings?.highlightEnabled || isSiteDisabled(settings, location.hostname)) return;
+  if (!settings?.highlightEnabled || isSiteDisabled(settings, location.hostname) || isOwnSurface(settings, location.href)) {
+    return;
+  }
   highlightWords(await send("highlightWords").catch(() => []));
 }
 

@@ -42,3 +42,20 @@ export async function updateSettings(patch: Partial<Settings>): Promise<Settings
 export function isSiteDisabled(settings: Settings, hostname: string): boolean {
   return settings.disabledSites.some((site) => hostname === site || hostname.endsWith(`.${site}`));
 }
+
+/**
+ * Pages that belong to Vocabulary OS itself: the extension's own pages and the
+ * web dashboard. Saved words are not highlighted there — the dashboard already
+ * shows them, so highlighting only adds noise.
+ */
+export function isOwnSurface(settings: Settings, url: string | URL): boolean {
+  try {
+    const target = new URL(url);
+    if (target.protocol === "chrome-extension:" || target.protocol === "moz-extension:") {
+      return true;
+    }
+    return Boolean(settings.dashboardUrl.trim()) && target.origin === new URL(settings.dashboardUrl).origin;
+  } catch {
+    return false;
+  }
+}
