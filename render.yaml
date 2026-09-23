@@ -1,6 +1,7 @@
-# Render blueprint: connect the repo at render.com/blueprints and it creates the API
-# and a Postgres database. Free plans sleep when idle (first request takes ~30 s)
-# and the free database expires after 30 days — see .ai/context/deployment.md.
+# Render blueprint: connect the repo at render.com/blueprints and it creates the API.
+# The database lives on Neon: Render asks for DATABASE_URL during setup.
+# The free API plan sleeps when idle, so the first request takes ~30 s.
+# See .ai/context/deployment.md.
 services:
   - type: web
     name: vocabulary-os-api
@@ -16,12 +17,6 @@ services:
         value: "22.23.2"
       - key: JWT_SECRET
         generateValue: true
+      # Neon direct (non-pooled) connection string. Render prompts for it.
       - key: DATABASE_URL
-        fromDatabase:
-          name: vocabulary-os-db
-          property: connectionString
-
-databases:
-  - name: vocabulary-os-db
-    plan: free
-    region: singapore
+        sync: false

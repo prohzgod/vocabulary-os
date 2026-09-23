@@ -48,9 +48,24 @@ pnpm --filter @vocab-os/api db:deploy
 node apps/api/dist/main.js
 ```
 
-### Managed Postgres
+### Managed Postgres (Neon)
 
-Neon, Supabase and Render Postgres all work. For serverless or pooled setups, use the pooled connection string. Migrations must run against the **direct** (unpooled) URL.
+Create a project at [neon.tech](https://neon.tech) and copy the **direct** connection string — the host has no `-pooler` in it — into `DATABASE_URL`:
+
+```
+postgresql://user:password@ep-something.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+```
+
+Use the direct string, not the pooled one: the API is a single long-running process that does not need PgBouncer, and `prisma migrate deploy` takes advisory locks that transaction pooling breaks. Only switch to the pooled string (keeping the direct one in `directUrl` in `schema.prisma`) if the API ever runs serverless or across many instances.
+
+Free-tier behaviour: the database sleeps after ~5 minutes idle, so the first query afterwards takes a second or two. Supabase and Render Postgres work the same way, except Render's free database is deleted after 30 days.
+
+Apply the schema either by deploying (the Render build and the Docker image both run `prisma migrate deploy`), or locally:
+
+```bash
+# with the connection string in apps/api/.env
+pnpm --filter @vocab-os/api db:deploy
+```
 
 ## 2. Web dashboard
 
