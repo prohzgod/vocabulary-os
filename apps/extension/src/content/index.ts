@@ -205,11 +205,12 @@ const STYLES = `
   .word { font-size: 13px; color: #5b564d; overflow-wrap: anywhere; }
   .pair { font-size: 11px; font-weight: 500; letter-spacing: .06em; color: #6e685e; white-space: nowrap; }
   .translation { font-family: Georgia, "Times New Roman", serif; font-size: 26px; font-weight: 500; line-height: 1.15; overflow-wrap: anywhere; }
-  .senses { display: grid; gap: 6px; }
+  /* Dictionary glosses can be long; cap the list so Save stays on screen. */
+  .senses { display: grid; gap: 8px; max-height: 176px; overflow-y: auto; overscroll-behavior: contain; }
   .sense { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: baseline; }
   .pos { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: #6e685e; }
-  .meanings { font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
-  .sense:first-child .meanings { font-size: 24px; }
+  .meanings { font-family: Georgia, "Times New Roman", serif; font-size: 16px; line-height: 1.35; overflow-wrap: anywhere; }
+  .sense:first-child .meanings { font-size: 20px; font-weight: 500; line-height: 1.25; }
   .context { font-size: 14px; line-height: 1.55; color: #3d3932; margin: 0; }
   mark { background: linear-gradient(transparent 58%, #ffd84d 58%); color: inherit; padding: 0 1px; }
   .muted { font-size: 12px; color: #6e685e; margin: 0; }

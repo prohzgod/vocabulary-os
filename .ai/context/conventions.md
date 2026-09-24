@@ -36,8 +36,8 @@ Add `"src>tgt": "Xenova/opus-mt-src-tgt"` to `LOCAL_MODELS` in `apps/extension/s
 
 ### Add or rebuild a dictionary
 
-1. Download the kaikki.org extract for the source language (English: `https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl`, several GB).
-2. `cd apps/extension && node scripts/build-dictionary.mjs <dump.jsonl> [public/dict/<src>-<tgt>.json]`. The target language is `TARGET_LANGUAGE` in the script (`vi`). It prints the headword count and sizes.
+1. Download the two kaikki.org extracts: Vietnamese Wiktionary `https://kaikki.org/viwiktionary/raw-wiktextract-data.jsonl.gz` (~34 MB) and English Wiktionary `https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl` (~3 GB; `curl … | grep -F '"vi"' > en-vi-lines.jsonl` keeps only the ~600 MB that can matter).
+2. `cd apps/extension && node scripts/build-dictionary.mjs --vi <vi .jsonl.gz> --en <English .jsonl> [--out public/dict/<src>-<tgt>.json]`. It prints headword count, form pointers and sizes. The target language is `TARGET_LANGUAGE` in the script (`vi`).
 3. For a new pair, add `"src>tgt": "dict/<src>-<tgt>.json"` to `DICTIONARIES` in `apps/extension/src/offscreen/dictionary.ts`.
 4. Commit the JSON. Keep `public/dict/NOTICE` (CC BY-SA 4.0 attribution) next to it.
 

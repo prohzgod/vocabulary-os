@@ -33,7 +33,7 @@ Rules: each task is one concern and small (about an hour or less), ordered so th
   - Do: in the translator section, show "Dictionary en → vi · N words" (or "No dictionary for this pair") and the "Wiktionary, CC BY-SA 4.0" credit link.
   - Verify: `pnpm --filter @vocab-os/extension typecheck && pnpm --filter @vocab-os/extension build`
 
-- [~] **T6: Build the real en→vi data file**
+- [x] **T6: Build the real en→vi data file**
   - Files: `apps/extension/public/dict/en-vi.json`, `implement.md`
   - Do: download the kaikki.org English extract (needs network, see design open question), run the script, commit the output. Record entry count, raw/gzipped size and a spot check of ~20 common words (e.g. massive, run, book, light, look up) in the log. If coverage is poor, stop and ask.
   - Verify: file loads in the T3 test path; sizes and spot check logged
@@ -43,13 +43,18 @@ Rules: each task is one concern and small (about an hour or less), ordered so th
   - Do: document the dictionary-first chain, data file location, build script and license.
   - Verify: `pnpm typecheck && pnpm test && pnpm build`
 
-- [ ] **T8 (added): Manual check with the real dictionary**
+- [x] **T9 (added): Merge Vietnamese Wiktionary into the build, with form pointers**
+  - Files: `packages/shared/src/dictionary.ts` (+ tests), `apps/extension/scripts/build-dictionary.mjs` (+ fixture, test), `apps/extension/public/dict/en-vi.json`, `NOTICE`, docs
+  - Do: entries may be a string pointer to a base word; `findEntry` follows one pointer. The script takes `--vi <viwiktionary .jsonl[.gz]> --en <English .jsonl[.gz]> [--out]`, uses Vietnamese glosses first (cleaned: no trailing period, lowercase first letter, drop over-long ones), appends English-edition translations, turns pure "form of" entries into pointers (from `form_of` or glosses like "số nhiều của child"), and merges base-word meanings into mixed entries. Rebuild the file and re-run the spot check.
+  - Verify: shared + script tests; spot check of the same 26 words logged; `pnpm typecheck && pnpm test && pnpm build`
+
+- [x] **T8 (added): Manual check with the real dictionary**
   - Files: none (log only)
   - Do: after T6, load `apps/extension/dist` unpacked in Chrome (needs a human, or a session with network access): select "massive" offline → meanings by POS → Save → card translation holds all meanings; select "running" → "from run"; select a sentence → machine translation (Chrome API or opus-mt) as before.
   - Verify: results logged in implement.md
 
 ## Done when
 
-- [ ] Every acceptance criterion in design.md is met
-- [ ] `pnpm typecheck && pnpm test && pnpm build` passes
-- [ ] `.ai/context/*` updated if a documented fact changed; ADR added if an architectural decision was made
+- [x] Every acceptance criterion in design.md is met
+- [x] `pnpm typecheck && pnpm test && pnpm build` passes
+- [x] `.ai/context/*` updated if a documented fact changed; ADR added if an architectural decision was made

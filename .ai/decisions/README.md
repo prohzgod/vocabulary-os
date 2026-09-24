@@ -20,3 +20,4 @@ Template:
 | [0001](0001-mvp-typescript-monorepo.md) | MVP as a TypeScript monorepo | Partly superseded |
 | [0002](0002-spring-boot-backend.md) | Spring Boot backend | Superseded by 0003 |
 | [0003](0003-v0.2-simplify.md) | v0.2: NestJS, on-device translation, word-keyed cards | Accepted |
+| [0004](0004-bundled-dictionary.md) | Bundled Wiktionary dictionary before machine translation | Accepted |

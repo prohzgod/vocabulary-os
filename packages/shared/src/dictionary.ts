@@ -6,11 +6,12 @@ export type Sense = [partOfSpeech: string, meanings: string[]];
 /**
  * A bundled bilingual dictionary (`apps/extension/public/dict/<src>-<tgt>.json`),
  * keyed by lowercase headword. Built by `apps/extension/scripts/build-dictionary.mjs`.
+ * A string entry is an inflected form pointing at its base word ("went" → "go").
  */
 export interface DictionaryFile {
   v: 1;
   source: string;
-  entries: Record<string, Sense[]>;
+  entries: Record<string, Sense[] | string>;
 }
 
 export interface DictionaryMatch {
@@ -39,13 +40,19 @@ export function lookupCandidates(text: string): string[] {
   return [...new Set([written, lower, ...forms])];
 }
 
-/** The first candidate present in the dictionary, or null. */
+/** The first candidate present in the dictionary, following a form pointer once, or null. */
 export function findEntry(entries: DictionaryFile["entries"], text: string): DictionaryMatch | null {
+  // hasOwn, so "constructor" or "__proto__" never hit Object.prototype.
+  const get = (key: string) => (Object.hasOwn(entries, key) ? entries[key] : undefined);
   for (const key of lookupCandidates(text)) {
-    // hasOwn, so "constructor" or "__proto__" never hit Object.prototype.
-    const entry = Object.hasOwn(entries, key) ? entries[key] : undefined;
-    const senses = (entry ?? []).filter(([, meanings]) => meanings.some((meaning) => meaning.trim()));
-    if (senses.length) return { headword: key, senses };
+    let headword = key;
+    let entry = get(key);
+    if (typeof entry === "string") {
+      headword = entry;
+      entry = get(entry);
+    }
+    const senses = (Array.isArray(entry) ? entry : []).filter(([, meanings]) => meanings.some((meaning) => meaning.trim()));
+    if (senses.length) return { headword, senses };
   }
   return null;
 }

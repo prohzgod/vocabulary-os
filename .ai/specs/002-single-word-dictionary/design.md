@@ -1,7 +1,7 @@
 # Dictionary lookup for single words
 
 - Spec: 002-single-word-dictionary
-- Status: In progress
+- Status: Done
 - Created: 2026-09-24
 
 ## Problem
@@ -45,11 +45,14 @@ Most selections are one word, and the offline model (opus-mt) is poor at isolate
 
 ### Data and contracts
 
-- **Source:** English Wiktionary, via the kaikki.org JSON extract (English entries' `translations` where `lang_code = "vi"`). License CC BY-SA 4.0: attribution in Options and a `NOTICE` next to the data file.
-- **File format** (`public/dict/en-vi.json`), keyed by lowercase headword:
+- **Sources** (both CC BY-SA 4.0, both from kaikki.org; attribution in Options and a `NOTICE` next to the data file), merged per headword and part of speech:
+  1. **Vietnamese Wiktionary** (`kaikki.org/viwiktionary`, ~133k English entries): its Vietnamese glosses of English words come first. Added after T6 showed English Wiktionary alone covers too few common words (see [log](implement.md)).
+  2. **English Wiktionary** (`kaikki.org/dictionary/English`): `translations` with `lang_code = "vi"`, appended after (adds phrases like "take off").
+- **File format** (`public/dict/en-vi.json`), keyed by lowercase headword. A string value is an inflected form pointing at its base word (from Wiktionary's "form of" data: went → go, children → child):
   ```json
-  { "v": 1, "source": "Wiktionary (CC BY-SA 4.0)", "entries": { "massive": [["adj", ["to lớn", "đồ sộ"]]] } }
+  { "v": 1, "source": "Wiktionary (CC BY-SA 4.0)", "entries": { "massive": [["adj", ["to lớn, đồ sộ; chắc nặng", "thô"]]], "went": "go" } }
   ```
+  `findEntry` follows one pointer and reports the base word as `headword`, so the card says "from *go*". Expected size: ~120k headwords, ~11 MB raw, ~3 MB gzipped, parsed once in the offscreen document.
 - **`TranslateResult`** (`src/lib/messages.ts`): `engine` gains `"dictionary"`; new optional `senses?: Sense[]` and `headword?: string` (set when a base-form fallback matched). `translation` is always filled (`formatMeanings`), so callers that ignore `senses` still work.
 - **Card, zod schemas, Prisma, sync:** no change. The translation is a plain string ≤ 500 chars, as today.
 - **Backward compatibility:** existing cards untouched. Old popup/options code keeps working because `translation` is unchanged in meaning.
@@ -70,22 +73,24 @@ Most selections are one word, and the offline model (opus-mt) is poor at isolate
 - **Show one meaning, let the user pick**: considered; user chose saving all meanings.
 - **Look up in the background service worker**: it restarts often, so the file would be re-parsed repeatedly. The offscreen document already stays alive for the model.
 - **Remote dictionary API**: breaks the on-device, offline promise.
-- **OVDP / FreeDict en-vi**: possibly larger coverage, but licensing is unclear; Wiktionary is clearly licensed. Kept as a fallback if coverage is too low.
+- **OVDP / FreeDict en-vi**: licensing unclear; Vietnamese Wiktionary gives the coverage with a clear license.
+- **English Wiktionary only**: small (0.26 MB gz) but missed "massive", "however", "consider", "went", "children".
+- **Copy the base word's meanings into each inflected form** instead of a pointer: no format change, but loses the "from *go*" note and adds a few MB.
 
 ## Risks and open questions
 
-- [ ] **Coverage and size are unmeasured.** Estimate: 15–30k headwords, 1–3 MB gzipped. Measure when building; if coverage of common words is poor, revisit the source.
-- [ ] **This cloud container has no network access to kaikki.org**, so the data file must be built on a machine that has it (or the host allowed in the environment's network policy). The script and extension code can be done and tested with a small fixture file first.
+- [x] **Coverage and size.** English Wiktionary alone: 16.7k headwords, 17/26 common words. Merged with Vietnamese Wiktionary (user's choice): see the T6 log for final numbers.
+- [x] **Network access to kaikki.org**: allowed in the environment's network policy.
 - [x] Should the dictionary win over Chrome's Translator API for single words? Yes: dictionary first (approved with the design).
 - [x] Is a setting to turn the dictionary off needed? No, until someone asks (approved with the design).
 - [ ] CC BY-SA share-alike: bundling the derived data file is fine with attribution; confirm there is no concern about distributing it on the Chrome Web Store.
 
 ## Acceptance criteria
 
-- [ ] Selecting a single word that is in the dictionary shows its meanings grouped by part of speech, with engine "dictionary", offline and logged out.
-- [ ] Saving it stores all shown meanings, `; `-joined, ≤ 500 chars.
-- [ ] An inflected form ("running") falls back to the base form and says so; the card word stays as selected.
-- [ ] Sentences and unknown words still use Chrome API → opus-mt, unchanged.
-- [ ] `lookupCandidates` and `formatMeanings` have unit tests in `shared`; the offscreen lookup has a test with a fixture dictionary.
-- [ ] Options shows the dictionary (pair, entry count) and the Wiktionary CC BY-SA attribution.
-- [ ] `pnpm typecheck && pnpm test && pnpm build` passes.
+- [x] Selecting a single word that is in the dictionary shows its meanings grouped by part of speech, with engine "dictionary", offline and logged out.
+- [x] Saving it stores all shown meanings, `; `-joined, ≤ 500 chars.
+- [x] An inflected form ("running") falls back to the base form and says so; the card word stays as selected.
+- [x] Sentences and unknown words still use Chrome API → opus-mt, unchanged.
+- [x] `lookupCandidates` and `formatMeanings` have unit tests in `shared`; the offscreen lookup has a test with a fixture dictionary.
+- [x] Options shows the dictionary (pair, entry count) and the Wiktionary CC BY-SA attribution.
+- [x] `pnpm typecheck && pnpm test && pnpm build` passes.

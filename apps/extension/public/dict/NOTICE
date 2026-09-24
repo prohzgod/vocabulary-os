@@ -1,6 +1,7 @@
 The dictionary files in this folder (for example en-vi.json) are derived from
-English Wiktionary (https://en.wiktionary.org/), extracted with wiktextract and
-published by kaikki.org (https://kaikki.org/).
+Vietnamese Wiktionary (https://vi.wiktionary.org/) and English Wiktionary
+(https://en.wiktionary.org/), extracted with wiktextract and published by
+kaikki.org (https://kaikki.org/).
 
 Wiktionary content is licensed under the Creative Commons Attribution-ShareAlike
 4.0 International License (CC BY-SA 4.0):

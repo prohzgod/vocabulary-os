@@ -93,7 +93,11 @@ describe("gradeIntervals", () => {
 });
 
 describe("dictionary lookup", () => {
-  const entries: Record<string, Sense[]> = {
+  const entries: Record<string, Sense[] | string> = {
+    went: "go",
+    go: [["verb", ["đi"]]],
+    broken: "missing",
+    loop: "loop",
     massive: [["adj", ["to lớn", "đồ sộ"]]],
     run: [["verb", ["chạy"]], ["noun", ["cuộc chạy"]]],
     study: [["verb", ["học"]]],
@@ -104,7 +108,7 @@ describe("dictionary lookup", () => {
   };
 
   it("finds a word as written, in any case", () => {
-    expect(findEntry(entries, "massive")).toEqual({ headword: "massive", senses: entries.massive });
+    expect(findEntry(entries, "massive")).toEqual({ headword: "massive", senses: [["adj", ["to lớn", "đồ sộ"]]] });
     expect(findEntry(entries, "  Massive ")?.headword).toBe("massive");
     expect(findEntry(entries, "Paris")?.headword).toBe("Paris");
   });
@@ -115,6 +119,13 @@ describe("dictionary lookup", () => {
     expect(findEntry(entries, "studies")?.headword).toBe("study");
     expect(findEntry(entries, "studied")?.headword).toBe("study");
     expect(findEntry(entries, "making")?.headword).toBe("make");
+  });
+
+  it("follows a form pointer once, to the base word", () => {
+    expect(findEntry(entries, "went")).toEqual({ headword: "go", senses: [["verb", ["đi"]]] });
+    expect(findEntry(entries, "Went")?.headword).toBe("go");
+    expect(findEntry(entries, "broken")).toBeNull();
+    expect(findEntry(entries, "loop")).toBeNull();
   });
 
   it("finds phrases, inflecting the first word", () => {
@@ -133,7 +144,7 @@ describe("dictionary lookup", () => {
   });
 
   it("joins every meaning once, within the card translation limit", () => {
-    expect(formatMeanings(entries.run)).toBe("chạy; cuộc chạy");
+    expect(formatMeanings(entries.run as Sense[])).toBe("chạy; cuộc chạy");
     expect(formatMeanings([["adj", ["to lớn", " To  lớn ", "đồ sộ"]], ["noun", ["đồ sộ"]]])).toBe("to lớn; đồ sộ");
     const many: Sense[] = [["noun", Array.from({ length: 100 }, (_, i) => `nghĩa số ${i}`)]];
     const joined = formatMeanings(many);

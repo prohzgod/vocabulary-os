@@ -172,7 +172,7 @@ function TranslationSection({ settings, update }: SectionProps) {
                 {status.dictionary ? (
                   <>
                     Every meaning of a word or short phrase. Built in, used first. {status.dictionary.entries.toLocaleString()} words from{" "}
-                    <a href="https://en.wiktionary.org/" target="_blank" rel="noreferrer">Wiktionary</a>,{" "}
+                    <a href="https://vi.wiktionary.org/" target="_blank" rel="noreferrer">Wiktionary</a>,{" "}
                     <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>.
                   </>
                 ) : (
