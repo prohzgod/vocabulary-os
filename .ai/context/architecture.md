@@ -65,16 +65,19 @@ Sync runs 2 s after any local change (debounced), whenever the popup opens, and 
 
 ```
 content script ──translate──▶ background worker ──▶ offscreen document
-                                                    1. Chrome Translator API (if "available")
-                                                    2. transformers.js + Xenova/opus-mt-en-vi (q8, WASM)
+                                                    1. Bundled dictionary (words and phrases of ≤ 4 words)
+                                                    2. Chrome Translator API (if "available")
+                                                    3. transformers.js + Xenova/opus-mt-en-vi (q8, WASM)
 ```
+
+- The **bundled dictionary** (`public/dict/en-vi.json`: ~124k headwords, 10 MB, parsed once in ~0.1 s; Vietnamese + English Wiktionary via kaikki.org, CC BY-SA 4.0) answers first for single words and short phrases, with every meaning grouped by part of speech (`src/offscreen/dictionary.ts`, lookup rules in `shared/src/dictionary.ts`). It tries the text as written, lowercase, then base-form guesses ("running" → "run"); irregular forms are stored as pointers ("went" → "go"). The card says "from *run*" and keeps the selected word. The card shows up to 3 parts of speech × 5 meanings and saves exactly those, joined with "; " (≤ 500 chars). Misses fall through to machine translation. The file is built by hand with `scripts/build-dictionary.mjs` and committed, so builds need no network.
 
 - The work runs in an **offscreen document** (`offscreen.html`), so the page being read never lags. The loaded model also survives service-worker restarts.
 - **Chrome's built-in Translator API** (Chrome 138+) is preferred: tiny and fast. Its model downloads only after a user click, so the Options page has a "Download" button.
 - The **offline model** (~100 MB) downloads from the Hugging Face Hub on first use and is then cached in Cache Storage. Measured on this machine: first run 11.8 s (download and load), cold start from cache 3.7 s, then about 0.2 s per translation.
 - **MV3 forbids remote code.** The ONNX Runtime WASM is bundled by Vite, and `translator.ts` clears transformers.js's default CDN `wasmPaths` so the bundled copy is used. The manifest CSP adds `'wasm-unsafe-eval'`.
-- **Language pairs:** Chrome's API supports many. The offline model only supports pairs listed in `LOCAL_MODELS` (currently `en>vi`).
-- **Known limitation:** opus-mt is weak on isolated single words (e.g. "massive" → "chứa"). Sentences are good. Chrome's API is better for single words.
+- **Language pairs:** Chrome's API supports many. The offline model only supports pairs listed in `LOCAL_MODELS`, and the dictionary only pairs listed in `DICTIONARIES` (both currently `en>vi`).
+- **Known limitation:** opus-mt is weak on isolated single words (e.g. "massive" → "chứa"); this is why the dictionary goes first. Sentences are good.
 
 ## Extension internals
 
@@ -84,7 +87,8 @@ content script ──translate──▶ background worker ──▶ offscreen do
 | `src/background/index.ts` | Message router (`handlers` object, type-checked against `Messages`) |
 | `src/background/sync.ts` | Account, token storage, sync loop |
 | `src/background/offscreen.ts` | Creates the offscreen document and forwards translation calls |
-| `src/offscreen/translator.ts` | Engine chain (Chrome API → transformers.js) |
+| `src/offscreen/translator.ts` | Engine chain (dictionary → Chrome API → transformers.js) |
+| `src/offscreen/dictionary.ts` | Loads the bundled dictionary once and looks words up |
 | `src/lib/db.ts` | Dexie store: save, grade, delete, dirty tracking, merge |
 | `src/content/*` | Selection button, inline popup (Shadow DOM), saved-word highlighting, DOM safety rules |
 | `src/popup`, `src/options` | React UIs |

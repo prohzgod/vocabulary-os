@@ -167,8 +167,28 @@ function TranslationSection({ settings, update }: SectionProps) {
         <div className="box">
           <div className="box-row">
             <div className="text">
+              <span className="title">Dictionary</span>
+              <span className="muted">
+                {status.dictionary ? (
+                  <>
+                    Every meaning of a word or short phrase. Built in, used first. {status.dictionary.entries.toLocaleString()} words from{" "}
+                    <a href="https://vi.wiktionary.org/" target="_blank" rel="noreferrer">Wiktionary</a>,{" "}
+                    <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>.
+                  </>
+                ) : (
+                  "No dictionary for this pair yet, so words are machine-translated."
+                )}
+              </span>
+            </div>
+            <span className={`status-chip${status.dictionary ? " ready" : ""}`}>
+              {status.dictionary && <span className="dot" />}
+              {status.dictionary ? "Ready" : "Not for this pair"}
+            </span>
+          </div>
+          <div className="box-row">
+            <div className="text">
               <span className="title">Chrome translator</span>
-              <span className="muted">Built into Chrome. Used first.</span>
+              <span className="muted">Built into Chrome. Used for sentences and words not in the dictionary.</span>
             </div>
             {status.chrome === "downloadable" ? (
               <button onClick={() => void downloadChromeModel()}>Download</button>

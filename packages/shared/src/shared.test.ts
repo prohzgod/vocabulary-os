@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardId, computeStats, createCard, formatInterval, gradeCard, gradeIntervals, isDue, markDeleted, mergeRemote, shouldAcceptIncoming } from "./index.js";
+import { cardId, findEntry, formatMeanings, lookupCandidates, computeStats, createCard, formatInterval, gradeCard, gradeIntervals, isDue, markDeleted, mergeRemote, shouldAcceptIncoming, type Sense } from "./index.js";
 
 const NOW = new Date("2026-09-18T08:00:00.000Z");
 const later = (card: ReturnType<typeof createCard>, ms: number) => ({
@@ -89,5 +89,68 @@ describe("gradeIntervals", () => {
     const reviewed = gradeCard(createCard({ word: "scheduled", translation: "lên kế hoạch", targetLanguage: "vi" }, NOW), "good", NOW);
     const labels = Object.values(gradeIntervals(reviewed, NOW)).map(formatInterval);
     expect(labels).toEqual(["10 min", "2 days", "3 days", "4 days"]);
+  });
+});
+
+describe("dictionary lookup", () => {
+  const entries: Record<string, Sense[] | string> = {
+    went: "go",
+    go: [["verb", ["đi"]]],
+    broken: "missing",
+    loop: "loop",
+    massive: [["adj", ["to lớn", "đồ sộ"]]],
+    run: [["verb", ["chạy"]], ["noun", ["cuộc chạy"]]],
+    study: [["verb", ["học"]]],
+    make: [["verb", ["làm"]]],
+    "look up": [["verb", ["tra cứu"]]],
+    empty: [["noun", ["  "]]],
+    Paris: [["name", ["Pa-ri"]]]
+  };
+
+  it("finds a word as written, in any case", () => {
+    expect(findEntry(entries, "massive")).toEqual({ headword: "massive", senses: [["adj", ["to lớn", "đồ sộ"]]] });
+    expect(findEntry(entries, "  Massive ")?.headword).toBe("massive");
+    expect(findEntry(entries, "Paris")?.headword).toBe("Paris");
+  });
+
+  it("falls back to a base form", () => {
+    expect(findEntry(entries, "running")?.headword).toBe("run");
+    expect(findEntry(entries, "runs")?.headword).toBe("run");
+    expect(findEntry(entries, "studies")?.headword).toBe("study");
+    expect(findEntry(entries, "studied")?.headword).toBe("study");
+    expect(findEntry(entries, "making")?.headword).toBe("make");
+  });
+
+  it("follows a form pointer once, to the base word", () => {
+    expect(findEntry(entries, "went")).toEqual({ headword: "go", senses: [["verb", ["đi"]]] });
+    expect(findEntry(entries, "Went")?.headword).toBe("go");
+    expect(findEntry(entries, "broken")).toBeNull();
+    expect(findEntry(entries, "loop")).toBeNull();
+  });
+
+  it("finds phrases, inflecting the first word", () => {
+    expect(findEntry(entries, "look  up")?.headword).toBe("look up");
+    expect(findEntry(entries, "looking up")?.headword).toBe("look up");
+  });
+
+  it("skips sentences, misses, empty entries and Object.prototype keys", () => {
+    expect(lookupCandidates("one two three four five")).toEqual([]);
+    expect(findEntry(entries, "look up the word now please")).toBeNull();
+    expect(findEntry(entries, "gigantic")).toBeNull();
+    expect(findEntry(entries, "empty")).toBeNull();
+    expect(findEntry(entries, "constructor")).toBeNull();
+    expect(findEntry(entries, "__proto__")).toBeNull();
+    expect(lookupCandidates("   ")).toEqual([]);
+  });
+
+  it("joins every meaning once, within the card translation limit", () => {
+    expect(formatMeanings(entries.run as Sense[])).toBe("chạy; cuộc chạy");
+    expect(formatMeanings([["adj", ["to lớn", " To  lớn ", "đồ sộ"]], ["noun", ["đồ sộ"]]])).toBe("to lớn; đồ sộ");
+    const many: Sense[] = [["noun", Array.from({ length: 100 }, (_, i) => `nghĩa số ${i}`)]];
+    const joined = formatMeanings(many);
+    expect(joined.length).toBeLessThanOrEqual(500);
+    expect(joined.endsWith(";")).toBe(false);
+    expect(joined.split("; ").every((part) => part.startsWith("nghĩa số"))).toBe(true);
+    expect(formatMeanings([["noun", ["x".repeat(600)]]])).toHaveLength(500);
   });
 });
