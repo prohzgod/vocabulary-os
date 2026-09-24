@@ -117,7 +117,7 @@ export async function translate(text: string, pair: LanguagePair): Promise<Trans
   if (entry) return entry;
   if ((await chromeAvailability(pair)) === "available") {
     try {
-      return { translation: await (await chromeTranslator(pair)).translate(text), engine: "chrome" };
+      return { translation: composed(await (await chromeTranslator(pair)).translate(text)), engine: "chrome" };
     } catch {
       // Fall through to the offline model.
     }
@@ -127,7 +127,15 @@ export async function translate(text: string, pair: LanguagePair): Promise<Trans
   if (!first?.translation_text) {
     throw new Error("The translator returned no text.");
   }
-  return { translation: first.translation_text, engine: "local" };
+  return { translation: composed(first.translation_text), engine: "local" };
+}
+
+/**
+ * Machine translation can return Vietnamese with decomposed accents ("e" + U+0300),
+ * which many fonts draw detached ("Chiề u"). NFC composes them into single characters.
+ */
+function composed(text: string): string {
+  return text.normalize("NFC");
 }
 
 export async function status(pair: LanguagePair): Promise<TranslatorStatus> {
