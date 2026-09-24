@@ -1,0 +1,10 @@
+The dictionary files in this folder (for example en-vi.json) are derived from
+English Wiktionary (https://en.wiktionary.org/), extracted with wiktextract and
+published by kaikki.org (https://kaikki.org/).
+
+Wiktionary content is licensed under the Creative Commons Attribution-ShareAlike
+4.0 International License (CC BY-SA 4.0):
+https://creativecommons.org/licenses/by-sa/4.0/
+
+These derived files are distributed under the same license. They are rebuilt
+with apps/extension/scripts/build-dictionary.mjs.

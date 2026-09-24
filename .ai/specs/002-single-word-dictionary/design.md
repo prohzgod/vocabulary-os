@@ -1,7 +1,7 @@
 # Dictionary lookup for single words
 
 - Spec: 002-single-word-dictionary
-- Status: Approved
+- Status: In progress
 - Created: 2026-09-24
 
 ## Problem

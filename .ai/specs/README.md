@@ -18,4 +18,4 @@ Small bug fixes and copy tweaks do not need a spec.
 | --- | --- | --- |
 | [000](000-v0.2-revamp/design.md) | v0.2 revamp: NestJS, on-device translation, simpler sync | Done |
 | [001](001-mobile-apps/design.md) | Mobile apps (Android ML Kit, iOS Translation) | Draft |
-| [002](002-single-word-dictionary/design.md) | Dictionary lookup for single words | Approved |
+| [002](002-single-word-dictionary/design.md) | Dictionary lookup for single words | In progress |

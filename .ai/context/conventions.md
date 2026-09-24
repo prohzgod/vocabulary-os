@@ -34,6 +34,13 @@
 
 Add `"src>tgt": "Xenova/opus-mt-src-tgt"` to `LOCAL_MODELS` in `apps/extension/src/offscreen/translator.ts`. Check that the model exists on the Hub with ONNX weights.
 
+### Add or rebuild a dictionary
+
+1. Download the kaikki.org extract for the source language (English: `https://kaikki.org/dictionary/English/kaikki.org-dictionary-English.jsonl`, several GB).
+2. `cd apps/extension && node scripts/build-dictionary.mjs <dump.jsonl> [public/dict/<src>-<tgt>.json]`. The target language is `TARGET_LANGUAGE` in the script (`vi`). It prints the headword count and sizes.
+3. For a new pair, add `"src>tgt": "dict/<src>-<tgt>.json"` to `DICTIONARIES` in `apps/extension/src/offscreen/dictionary.ts`.
+4. Commit the JSON. Keep `public/dict/NOTICE` (CC BY-SA 4.0 attribution) next to it.
+
 ## Commands
 
 Run from the repo root (use `corepack pnpm …` if `pnpm` is not installed globally):

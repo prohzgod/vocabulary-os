@@ -1,5 +1,6 @@
 import { env, pipeline, type TranslationPipeline } from "@huggingface/transformers";
 import type { TranslateResult, TranslatorStatus } from "../lib/messages.js";
+import { dictionaryStatus, lookup } from "./dictionary.js";
 
 export interface LanguagePair {
   sourceLanguage: string;
@@ -111,6 +112,9 @@ function localTranslator(pair: LanguagePair): Promise<TranslationPipeline> {
 // --- Public API used by offscreen/index.ts ---
 
 export async function translate(text: string, pair: LanguagePair): Promise<TranslateResult> {
+  // Words and short phrases: the dictionary gives every meaning, which machine translation can't.
+  const entry = await lookup(text, pair);
+  if (entry) return entry;
   if ((await chromeAvailability(pair)) === "available") {
     try {
       return { translation: await (await chromeTranslator(pair)).translate(text), engine: "chrome" };
@@ -130,7 +134,8 @@ export async function status(pair: LanguagePair): Promise<TranslatorStatus> {
   const key = pairKey(pair);
   return {
     chrome: await chromeAvailability(pair),
-    local: LOCAL_MODELS[key] ? (localStates.get(key) ?? { state: "idle", progress: 0 }) : { state: "unsupported", progress: 0 }
+    local: LOCAL_MODELS[key] ? (localStates.get(key) ?? { state: "idle", progress: 0 }) : { state: "unsupported", progress: 0 },
+    dictionary: await dictionaryStatus(pair)
   };
 }
 

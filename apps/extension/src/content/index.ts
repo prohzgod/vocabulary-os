@@ -1,3 +1,4 @@
+import type { Sense } from "@vocab-os/shared";
 import { send, type TranslateResult } from "../lib/messages.js";
 import { isOwnSurface, isSiteDisabled, type Settings } from "../lib/settings.js";
 import { contextFromRange } from "./context.js";
@@ -69,7 +70,7 @@ async function showTranslation(root: HTMLElement, rect: DOMRect, text: string, c
   const showSave = () => {
     save.disabled = false;
     save.textContent = "Save word";
-    footer.replaceChildren(save, el("span", { className: "muted", textContent: "Translated on this device" }));
+    footer.replaceChildren(save, el("span", { className: "muted", textContent: result.engine === "dictionary" ? "From the dictionary" : "Translated on this device" }));
   };
   const saveCard = async () => {
     save.disabled = true;
@@ -110,11 +111,20 @@ async function showTranslation(root: HTMLElement, rect: DOMRect, text: string, c
 
   showSave();
   render(
-    el("div", { className: "translation", textContent: result.translation }),
+    ...(result.senses ? senseList(result.senses, result.headword) : [el("div", { className: "translation", textContent: result.translation })]),
     ...(context ? [contextLine(context, text)] : []),
     footer
   );
   save.focus();
+}
+
+/** Dictionary meanings, one row per part of speech, plus "from run" when a base form matched. */
+function senseList(senses: Sense[], headword: string | undefined): HTMLElement[] {
+  const rows = senses.map(([pos, meanings]) =>
+    el("div", { className: "sense" }, el("span", { className: "pos", textContent: pos.toUpperCase() }), el("span", { className: "meanings", textContent: meanings.join(" · ") }))
+  );
+  const note = headword ? [el("p", { className: "muted" }, document.createTextNode("from "), el("em", { textContent: headword }))] : [];
+  return [el("div", { className: "senses" }, ...rows), ...note];
 }
 
 /** The sentence with the selected word marked in highlighter yellow. */
@@ -195,6 +205,11 @@ const STYLES = `
   .word { font-size: 13px; color: #5b564d; overflow-wrap: anywhere; }
   .pair { font-size: 11px; font-weight: 500; letter-spacing: .06em; color: #6e685e; white-space: nowrap; }
   .translation { font-family: Georgia, "Times New Roman", serif; font-size: 26px; font-weight: 500; line-height: 1.15; overflow-wrap: anywhere; }
+  .senses { display: grid; gap: 6px; }
+  .sense { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: baseline; }
+  .pos { font-size: 11px; font-weight: 600; letter-spacing: .06em; color: #6e685e; }
+  .meanings { font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 500; line-height: 1.25; overflow-wrap: anywhere; }
+  .sense:first-child .meanings { font-size: 24px; }
   .context { font-size: 14px; line-height: 1.55; color: #3d3932; margin: 0; }
   mark { background: linear-gradient(transparent 58%, #ffd84d 58%); color: inherit; padding: 0 1px; }
   .muted { font-size: 12px; color: #6e685e; margin: 0; }

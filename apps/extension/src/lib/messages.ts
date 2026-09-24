@@ -1,11 +1,16 @@
-import type { Card, Credentials, Grade, NewCardInput, Stats } from "@vocab-os/shared";
+import type { Card, Credentials, Grade, NewCardInput, Sense, Stats } from "@vocab-os/shared";
 import type { Settings } from "./settings.js";
 
-export type TranslationEngine = "chrome" | "local";
+export type TranslationEngine = "dictionary" | "chrome" | "local";
 
 export interface TranslateResult {
+  /** What gets saved on the card. For the dictionary, every meaning joined with "; ". */
   translation: string;
   engine: TranslationEngine;
+  /** Dictionary meanings by part of speech (dictionary engine only). */
+  senses?: Sense[];
+  /** The dictionary entry used when it differs from the selection, e.g. "run" for "running". */
+  headword?: string;
 }
 
 export interface TranslatorStatus {
@@ -13,6 +18,8 @@ export interface TranslatorStatus {
   chrome: "unsupported" | "unavailable" | "downloadable" | "downloading" | "available";
   /** The bundled opus-mt model run with transformers.js. */
   local: { state: "unsupported" | "idle" | "loading" | "ready" | "error"; progress: number; error?: string };
+  /** The bundled dictionary for the current language pair, or null if there is none. */
+  dictionary: { entries: number; source: string } | null;
 }
 
 export interface AccountState {
