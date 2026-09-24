@@ -1,7 +1,7 @@
 # Dictionary lookup for single words
 
 - Spec: 002-single-word-dictionary
-- Status: Draft
+- Status: Approved
 - Created: 2026-09-24
 
 ## Problem
@@ -41,7 +41,7 @@ Most selections are one word, and the offline model (opus-mt) is poor at isolate
 | `apps/api` | N/A |
 | `apps/web` | N/A |
 | `apps/extension` | Bundled data file `public/dict/en-vi.json`; offscreen `dictionary.ts` loads it lazily with `fetch(chrome.runtime.getURL(...))` and keeps it in memory; `translator.ts` tries it first for selections of ≤ 4 words; content card renders senses; Options shows dictionary size + attribution |
-| `scripts/` | New `build-dictionary.mjs`: turns the upstream dump into the compact JSON. Run by hand, output committed, so normal builds need no network |
+| `apps/extension/scripts/` | New `build-dictionary.mjs`: turns the upstream dump into the compact JSON. Run by hand, output committed, so normal builds need no network |
 
 ### Data and contracts
 
@@ -76,8 +76,8 @@ Most selections are one word, and the offline model (opus-mt) is poor at isolate
 
 - [ ] **Coverage and size are unmeasured.** Estimate: 15–30k headwords, 1–3 MB gzipped. Measure when building; if coverage of common words is poor, revisit the source.
 - [ ] **This cloud container has no network access to kaikki.org**, so the data file must be built on a machine that has it (or the host allowed in the environment's network policy). The script and extension code can be done and tested with a small fixture file first.
-- [ ] Should the dictionary win over Chrome's Translator API for single words, or only over opus-mt? Proposed: dictionary first (it gives all senses, which is what gets saved).
-- [ ] Is a setting to turn the dictionary off needed? Proposed: no, until someone asks.
+- [x] Should the dictionary win over Chrome's Translator API for single words? Yes: dictionary first (approved with the design).
+- [x] Is a setting to turn the dictionary off needed? No, until someone asks (approved with the design).
 - [ ] CC BY-SA share-alike: bundling the derived data file is fine with attribution; confirm there is no concern about distributing it on the Chrome Web Store.
 
 ## Acceptance criteria
