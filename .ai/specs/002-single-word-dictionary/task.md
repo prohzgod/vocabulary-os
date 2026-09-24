@@ -33,7 +33,7 @@ Rules: each task is one concern and small (about an hour or less), ordered so th
   - Do: in the translator section, show "Dictionary en → vi · N words" (or "No dictionary for this pair") and the "Wiktionary, CC BY-SA 4.0" credit link.
   - Verify: `pnpm --filter @vocab-os/extension typecheck && pnpm --filter @vocab-os/extension build`
 
-- [ ] **T6: Build the real en→vi data file**
+- [~] **T6: Build the real en→vi data file**
   - Files: `apps/extension/public/dict/en-vi.json`, `implement.md`
   - Do: download the kaikki.org English extract (needs network, see design open question), run the script, commit the output. Record entry count, raw/gzipped size and a spot check of ~20 common words (e.g. massive, run, book, light, look up) in the log. If coverage is poor, stop and ask.
   - Verify: file loads in the T3 test path; sizes and spot check logged

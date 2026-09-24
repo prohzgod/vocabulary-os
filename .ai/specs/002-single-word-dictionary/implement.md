@@ -73,3 +73,10 @@ _Fill in when the spec is Done._
 - Changed: `.ai/context/architecture.md` (engine chain, dictionary paragraph, internals table, known limitation), `.ai/context/conventions.md` (recipe "Add or rebuild a dictionary"), `CLAUDE.md` (translation bullet).
 - Why / decisions: the manual Chrome check moved to a new task T8 (added). The UI part was already checked in Chromium with a sample file (T5 log), but the real-data check and the sentence → machine-translation path need T6 and network access (the opus-mt download is blocked here too).
 - Verified: `pnpm typecheck && pnpm test && pnpm build` → all pass (shared 14 tests, extension 30 tests, api/web no tests; every package builds).
+
+### 2026-09-24: T6 Build the real en→vi data file (first attempt, stopped to ask)
+
+- `kaikki.org` is now allowed. Streamed the English extract (3.25 GB, 2026-09-20) into the script: `curl … | node scripts/build-dictionary.mjs /dev/stdin` in about 2 min.
+- Result `public/dict/en-vi.json`: **16,696 headwords, 0.77 MB raw, 0.26 MB gzipped.**
+- Spot check, 26 common words: **17 hits.** Misses include massive, however, consider, carefully, sustainable, give in, and irregular forms (went, children). Some hits are thin or odd: "look up" → only "ngước", "run" → "chạy, chảy".
+- Coverage is poor, so per T6 I stopped to ask. Found an alternative: the **Vietnamese Wiktionary** extract (`https://kaikki.org/viwiktionary/raw-wiktextract-data.jsonl.gz`, 34 MB gz, same CC BY-SA license) has **133k English entries** with Vietnamese glosses written for learners ("massive" → "To lớn, đồ sộ; chắc nặng"). It hits all of the above except the phrasal verbs, and irregular forms say "động từ quá khứ của go". Rough size as a dictionary: 119k headwords, 11 MB raw, 2.8 MB gzipped.
